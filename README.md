@@ -10,6 +10,8 @@ so they can all be installed side by side.
 | [`apk/PetArena-Thanksgiving.apk`](apk/PetArena-Thanksgiving.apk) | Thanksgiving | Herfstige Kalkoen Pet Arena-logo |
 | [`apk/PetArena-Kerst.apk`](apk/PetArena-Kerst.apk) | Kerst | Sneeuwman in de Pet Arena |
 
+![App-iconen](docs/iconen.png)
+
 ## Installing
 
 Download an `.apk` on your Android phone (Android 5.0 or newer), open it and allow

@@ -33,27 +33,24 @@ dalvik-exchange --dex --min-sdk-version=21 --output="$BUILD/classes.dex" "$BUILD
 
 make_icons() { # logo res_dir
   local logo="$1" res="$2"
-  # Legacy launcher icon (Android 5-7): the logo with rounded corners.
-  for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
-    local dir="${d%%:*}" px="${d##*:}" r
-    r=$((px / 6))
-    mkdir -p "$res/mipmap-$dir"
-    convert "$logo" -resize "${px}x${px}" \
-      \( +clone -alpha extract -fill black -colorize 100 -fill white \
-         -draw "roundrectangle 0,0,$((px-1)),$((px-1)),$r,$r" \) \
-      -alpha off -compose CopyOpacity -composite "$res/mipmap-$dir/ic_launcher.png"
-  done
-  # Adaptive icon (Android 8+): blurred logo as background, full logo in the
-  # safe zone on top so the launcher mask never cuts off "PET ARENA".
   mkdir -p "$res/drawable-nodpi" "$res/mipmap-anydpi-v26"
-  convert "$logo" -resize 432x432 -blur 0x18 -modulate 85 "$res/drawable-nodpi/ic_launcher_background.png"
-  convert "$logo" -resize 252x252 \
-    \( +clone -alpha extract -fill black -colorize 100 -fill white \
-       -draw "roundrectangle 0,0,251,251,40,40" \) \
-    -alpha off -compose CopyOpacity -composite "$res/fg.png"
-  convert -size 432x432 xc:none "$res/fg.png" -gravity center -compose over -composite \
-    "PNG32:$res/drawable-nodpi/ic_launcher_foreground.png"
-  rm "$res/fg.png"
+  # Adaptive icon (Android 8+): one full-bleed 108dp layer with the logo sized so
+  # the round launcher mask shows all of it, and its edges mirrored outward so
+  # the circle is filled seamlessly.
+  convert "$logo" -resize 300x300 -virtual-pixel mirror \
+    -set option:distort:viewport 432x432-66-66 -distort SRT 0 +repage \
+    "$res/drawable-nodpi/ic_launcher_background.png"
+  convert -size 432x432 xc:none "PNG32:$res/drawable-nodpi/ic_launcher_foreground.png"
+  # Round icon for Android 5-7: the visible 72dp centre of that layer as a circle.
+  for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+    local dir="${d%%:*}" px="${d##*:}" h
+    h=$((px / 2))
+    mkdir -p "$res/mipmap-$dir"
+    convert "$res/drawable-nodpi/ic_launcher_background.png" -crop 288x288+72+72 +repage \
+      -resize "${px}x${px}" -alpha set \
+      \( -size "${px}x${px}" xc:black -fill white -draw "circle $h,$h $h,0" \) \
+      -alpha off -compose CopyOpacity -composite "PNG32:$res/mipmap-$dir/ic_launcher.png"
+  done
   cat > "$res/mipmap-anydpi-v26/ic_launcher.xml" <<'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
